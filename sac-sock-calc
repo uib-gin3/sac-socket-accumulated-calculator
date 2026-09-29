@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+
+import socketserver
+
+class SacSockCalHandler(socketserver.StreamRequestHandler):
+    def handle(self):
+        self.wfile.write("helo".encode('utf-8'))  
+
+if __name__=='__main__':
+    print("SAC sock calc")
+
+    with socketserver.TCPServer(('', 1234), SacSockCalHandler) as server:
+        server.serve_forever()
+
