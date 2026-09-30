@@ -31,21 +31,32 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
                 operation = None
                 print("Invalid data, ignoring")
 
-            if operation == 'add':
-                print(f"Applying add to current memory: {mem}")
-                result = mem.pop(0) # FIFO
-                while len(mem):
-                    item = mem.pop(0) 
-                    result += item
+ 
+            try:
+                if operation == 'clear':
+                    print(f"Clearing")
+                    mem = [] 
+                    result = ''
 
-            elif operation == 'sub':
-                print(f"Applying sub to current memory: {mem}")
-                result = mem.pop(0) # FIFO
-                while len(mem):
-                    item = mem.pop(0) 
-                    result -= item
+                elif operation == 'add':
+                    print(f"Applying add to current memory: {mem}")
+                    result = mem.pop(0) # FIFO
+                    while len(mem):
+                        item = mem.pop(0) 
+                        result += item
 
-            mem.append(result)
+                elif operation == 'sub':
+                    print(f"Applying sub to current memory: {mem}")
+                    result = mem.pop(0) # FIFO
+                    while len(mem):
+                        item = mem.pop(0) 
+                        result -= item
+            except IndexError:
+                result = "Error"
+
+            if result and result != 'Error':
+                mem.append(result)
+
             print(f"Mem is {mem}")
             self.wfile.write(f"{result}\n".encode('utf-8'))
 
