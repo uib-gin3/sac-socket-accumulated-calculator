@@ -2,13 +2,54 @@
 
 import socketserver
 
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+
 class SacSockCalHandler(socketserver.StreamRequestHandler):
     def handle(self):
-        self.wfile.write("helo".encode('utf-8'))  
+        self.wfile.write("GREETINGS PROFESSOR FALKEN.\n".encode('utf-8'))
+
+        mem = []
+        while True:
+
+            received = self.rfile.readline()
+    
+            try:
+                number = int(received)
+                print(f"Received number: {number}")
+                mem.append(number)
+                continue
+            except ValueError:
+                number = None
+
+            try:
+                operation = received.decode('utf-8').strip()
+                print(f"Received operation: {operation}")
+            except (UnicodeDecodeError, LookupError, ValueError, TypeError):
+                operation = None
+                print("Invalid data, ignoring")
+
+            if operation == 'add':
+                print(f"Applying add to current memory: {mem}")
+                result = 0
+
+                while len(mem):
+                    item = mem.pop()
+                    result += item
+
+                self.wfile.write(f"{result}\n".encode('utf-8'))
+
 
 if __name__=='__main__':
     print("SAC sock calc")
 
-    with socketserver.TCPServer(('', 1234), SacSockCalHandler) as server:
-        server.serve_forever()
+    server = ThreadedTCPServer(('', 1234), SacSockCalHandler)
 
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+
+    server.server_close()
