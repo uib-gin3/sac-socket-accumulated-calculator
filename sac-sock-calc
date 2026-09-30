@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+from math import sqrt
+from statistics import mean, stdev
+
 import socketserver
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -11,7 +14,7 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
     def handle(self):
         self.wfile.write("GREETINGS PROFESSOR FALKEN.\n".encode('utf-8'))
 
-        mem = [0]
+        mem = []
         while True:
 
             received = self.rfile.readline()
@@ -47,14 +50,51 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 
                 elif operation == 'sub':
                     print(f"Applying sub to current memory: {mem}")
-                    result = mem.pop(0) # FIFO
+                    result = mem.pop(0)
                     while len(mem):
                         item = mem.pop(0) 
                         result -= item
-            except IndexError:
-                result = "Error"
 
-            if result and result != 'Error':
+                elif operation == 'div':
+                    result = mem.pop(0)
+                    while len(mem):
+                        item = mem.pop(0) 
+                        result /= item
+
+                elif operation == 'mult':
+                    result = mem.pop(0)
+                    while len(mem):
+                        item = mem.pop(0) 
+                        result *= item
+
+                elif operation == 'sqrt':
+                    if len(mem) == 1:
+                        result = sqrt(mem.pop(0))
+                        mem = []
+                    else:
+                        result = 'Error: More than one value'
+
+                elif operation == 'mean':
+                    if len(mem) > 1:
+                        result = mean(mem)
+                        mem = []
+                    else:
+                        result = 'Error: More than one needed'
+
+                elif operation == 'std':
+                    if len(mem) > 1:
+                        result = stdev(mem)
+                        mem = []
+                    else:
+                        result = 'Error: More than one needed'
+
+                else:
+                    result = "Error: Unknown operation"
+
+            except IndexError:
+                result = "Error: Missing value"
+
+            if result and type(result) in (int, float):
                 mem.append(result)
 
             print(f"Mem is {mem}")
