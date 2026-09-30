@@ -11,7 +11,7 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
     def handle(self):
         self.wfile.write("GREETINGS PROFESSOR FALKEN.\n".encode('utf-8'))
 
-        mem = []
+        mem = [0]
         while True:
 
             received = self.rfile.readline()
@@ -33,13 +33,21 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 
             if operation == 'add':
                 print(f"Applying add to current memory: {mem}")
-                result = 0
-
+                result = mem.pop(0) # FIFO
                 while len(mem):
-                    item = mem.pop()
+                    item = mem.pop(0) 
                     result += item
 
-                self.wfile.write(f"{result}\n".encode('utf-8'))
+            elif operation == 'sub':
+                print(f"Applying sub to current memory: {mem}")
+                result = mem.pop(0) # FIFO
+                while len(mem):
+                    item = mem.pop(0) 
+                    result -= item
+
+            mem.append(result)
+            print(f"Mem is {mem}")
+            self.wfile.write(f"{result}\n".encode('utf-8'))
 
 
 if __name__=='__main__':
