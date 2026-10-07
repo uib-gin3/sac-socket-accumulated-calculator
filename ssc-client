@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+
+# This file has been fully vibe-coded with MiMo-2.6-Flash on OpenCode
+
+import argparse
+import socket
+import sys
+
+BANNER = (
+    "GREETINGS PROFESSOR FALKEN.",
+    "DO YOU WANT TO PLAY CALCULATIONS?.",
+    "JUST SEND NUMBERS (ONE PER LINE) OR AN OPERATION.",
+    "AVAILABLE OPERATIONS: add, sub, div, mult, sqrt, mean, std, clear.",
+)
+OPERATIONS = ('clear', 'add', 'sub', 'div', 'mult', 'sqrt', 'mean', 'std')
+
+
+def recv_line(f):
+    line = f.readline()
+    if not line:
+        raise ConnectionError("server closed the connection")
+    return line.decode('utf-8', errors='replace').rstrip('\n')
+
+
+def run(host, port, op, numbers):
+    with socket.create_connection((host, port), timeout=10) as sock:
+        f = sock.makefile('rb')
+        banner = tuple(recv_line(f) for _ in BANNER)
+        if banner != BANNER:
+            print(f"unexpected banner: {banner!r}", file=sys.stderr)
+
+        sock.sendall(b"clear\n")
+        recv_line(f)
+
+        payload = b"".join(f"{n}\n".encode('utf-8') for n in numbers)
+        if payload:
+            sock.sendall(payload)
+
+        sock.sendall(f"{op}\n".encode('utf-8'))
+        result = recv_line(f)
+
+    print(result)
+    return 0 if not result.startswith("Error") else 1
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog='ssc-client',
+        description="Send numbers and an operation to the SAC socket calculator.")
+    parser.add_argument('-H', '--host', default='127.0.0.1', help="server host (default: 127.0.0.1)")
+    parser.add_argument('-p', '--port', type=int, default=1234, help="server port (default: 1234)")
+    parser.add_argument('-o', '--op', default='add', choices=OPERATIONS,
+                        help="operation to apply (default: add)")
+    parser.add_argument('numbers', nargs='*', type=int, metavar='N',
+                        help="integer operands to send before the operation")
+    args = parser.parse_args()
+
+    try:
+        sys.exit(run(args.host, args.port, args.op, args.numbers))
+    except (ConnectionError, OSError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
