@@ -14,6 +14,7 @@ import re
 import threading
 import socketserver
 
+from sys import argv
 from math import sqrt
 from statistics import mean, stdev
 
@@ -211,11 +212,16 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 
 
 if __name__=='__main__':
-    print("SAC sock calc")
 
-    # 1234 is a nice number for a port for a calculator
-    # also a great password :D
-    server = ThreadedTCPServer(('', 1234), SacSockCalHandler)
+    # Kidna recursive acrynom like any good gnu program :)
+    print("SAC socket accumulator calculator")
+
+    # Yes would be faciner to use click but that way is simpler and dep-free
+    stats = '--no-stats' not in argv
+
+
+    # 1234 is a nice number for a port of a calculator, also a great password :D
+    server = ThreadedTCPServer(('', 1234), SacSockCalHandler, stats=stats)
 
     try:
         server.serve_forever()
