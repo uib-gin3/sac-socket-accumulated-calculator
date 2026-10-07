@@ -1,0 +1,253 @@
+#!/usr/bin/env python3
+
+# This file has been fully vibe-coded with MiMo-2.6-Flash on OpenCode
+
+import argparse
+import random
+import socket
+import sys
+import threading
+import time
+
+BANNER_LINES = 4
+OPS = ('add', 'sub', 'div', 'mult', 'sqrt', 'mean', 'std')
+RETRIES = 3
+
+
+class Client(threading.Thread):
+    def __init__(self, host, port, args, deadline, stop):
+        super().__init__(daemon=True)
+        self.host = host
+        self.port = port
+        self.args = args
+        self.deadline = deadline
+        self.stop = stop
+        self.connected = False
+        self.served = 0
+        self.errors = 0
+        self.bytes_sent = 0
+        self.bytes_recv = 0
+        self.latencies = []
+
+    def payload(self):
+        if self.args.op:
+            op = self.args.op
+        else:
+            op = random.choice(OPS)
+
+        if self.args.n is not None:
+            count = self.args.n
+        elif op == 'sqrt':
+            count = 1
+        else:
+            count = random.randint(20, 50)
+
+        numbers = [random.randint(1, 100) for _ in range(count)]
+        return op, numbers
+
+    def request(self, sock, f):
+        op, numbers = self.payload()
+        lines = ["clear\n"] + [f"{n}\n" for n in numbers] + [f"{op}\n"]
+        data = "".join(lines).encode('utf-8')
+        sock.sendall(data)
+        self.bytes_sent += len(data)
+
+        reply_clear = f.readline()
+        reply = f.readline()
+        if not reply_clear or not reply:
+            raise ConnectionError("server closed the connection")
+        received = reply_clear + reply
+        self.bytes_recv += len(received)
+
+        result = reply.decode('utf-8', errors='replace').rstrip('\n')
+        if result.startswith("Error"):
+            self.errors += 1
+
+    def connect(self):
+        last = None
+        for _ in range(RETRIES):
+            try:
+                sock = socket.create_connection((self.host, self.port), timeout=10)
+                f = sock.makefile('rb')
+                for _ in range(BANNER_LINES):
+                    if not f.readline():
+                        raise ConnectionError("no greeting")
+                self.connected = True
+                return sock, f
+            except (ConnectionError, OSError) as e:
+                last = e
+                time.sleep(0.5)
+        raise last
+
+    def run(self):
+        try:
+            sock, f = self.connect()
+        except (ConnectionError, OSError) as e:
+            print(f"client: connect failed: {e}", file=sys.stderr)
+            self.errors += 1
+            return
+
+        rng = random.Random()
+        try:
+            while not self.stop.is_set() and time.monotonic() < self.deadline:
+                if self.args.rate > 0:
+                    remaining = self.deadline - time.monotonic()
+                    if remaining <= 0:
+                        break
+                    delay = min(rng.expovariate(self.args.rate), remaining)
+                    if self.stop.wait(delay):
+                        break
+                    if time.monotonic() >= self.deadline:
+                        break
+
+                start = time.monotonic()
+                try:
+                    self.request(sock, f)
+                except (ConnectionError, OSError) as e:
+                    self.errors += 1
+                    try:
+                        sock.close()
+                    except OSError:
+                        pass
+                    try:
+                        sock, f = self.connect()
+                    except (ConnectionError, OSError):
+                        print(f"client: reconnect failed: {e}", file=sys.stderr)
+                        break
+                    continue
+                self.latencies.append(time.monotonic() - start)
+                self.served += 1
+        finally:
+            try:
+                sock.close()
+            except OSError:
+                pass
+            self.connected = False
+
+
+def percentile(sorted_samples, p):
+    if not sorted_samples:
+        return 0.0
+    k = (len(sorted_samples) - 1) * p / 100
+    lo = int(k)
+    hi = min(lo + 1, len(sorted_samples) - 1)
+    return sorted_samples[lo] + (sorted_samples[hi] - sorted_samples[lo]) * (k - lo)
+
+
+def snapshot(clients):
+    return {
+        'active': sum(1 for c in clients if c.connected),
+        'served': sum(c.served for c in clients),
+        'errors': sum(c.errors for c in clients),
+        'bytes_sent': sum(c.bytes_sent for c in clients),
+        'bytes_recv': sum(c.bytes_recv for c in clients),
+        'latency_sum': sum(sum(c.latencies) for c in clients),
+    }
+
+
+def report(clients, interval, deadline, stop):
+    prev = snapshot(clients)
+    prev_t = time.monotonic()
+    while not stop.wait(interval):
+        now = time.monotonic()
+        if now >= deadline:
+            break
+        cur = snapshot(clients)
+        dt = now - prev_t
+        window = cur['served'] - prev['served']
+        avg = 0.0
+        if window:
+            avg = (cur['latency_sum'] - prev['latency_sum']) / window
+        print(f"[{now - t0:6.1f}s] conns={cur['active']} "
+              f"served={cur['served']} (+{window}, {window / dt:7.1f} req/s) "
+              f"errors={cur['errors']} "
+              f"tx={cur['bytes_sent']}B rx={cur['bytes_recv']}B "
+              f"resp_avg={avg * 1000:.2f}ms",
+              flush=True)
+        prev, prev_t = cur, now
+
+
+def main():
+    global t0
+
+    parser = argparse.ArgumentParser(
+        prog='ssc-bench',
+        description="Benchmark the SAC socket calculator.")
+    parser.add_argument('-c', '--clients', type=int, default=1,
+                        help="number of concurrent clients (default: 1)")
+    parser.add_argument('-r', '--rate', type=float, required=True,
+                        help="requests per second per client (exponential inter-arrival)")
+    parser.add_argument('-d', '--duration', type=float, required=True,
+                        help="experiment duration in seconds")
+    parser.add_argument('-H', '--host', default='127.0.0.1', help="server host (default: 127.0.0.1)")
+    parser.add_argument('-p', '--port', type=int, default=1234, help="server port (default: 1234)")
+    parser.add_argument('-o', '--op', choices=OPS,
+                        help="fixed operation (default: random each request)")
+    parser.add_argument('-n', '--numbers', type=int, default=None, dest='n',
+                        help="fixed operand count (default: 1 for sqrt, random 20-50 otherwise)")
+    parser.add_argument('-i', '--interval', type=float, default=1.0,
+                        help="stats interval in seconds (default: 1.0)")
+    args = parser.parse_args()
+
+    if args.clients < 1:
+        parser.error("-c must be >= 1")
+    if args.rate < 0:
+        parser.error("-r must be >= 0")
+    if args.duration <= 0:
+        parser.error("-d must be > 0")
+    if args.n is not None and args.n < 1:
+        parser.error("-n must be >= 1")
+
+    stop = threading.Event()
+    t0 = time.monotonic()
+    deadline = t0 + args.duration
+    clients = [Client(args.host, args.port, args, deadline, stop)
+               for _ in range(args.clients)]
+
+    offered = "unlimited" if args.rate == 0 else f"{args.clients * args.rate:.1f} req/s"
+    print(f"ssc-bench: {args.clients} clients, "
+          f"{'unlimited' if args.rate == 0 else f'{args.rate} req/s each'}, "
+          f"(total {offered}), {args.duration}s "
+          f"against {args.host}:{args.port}", flush=True)
+
+    reporter = threading.Thread(
+        target=report, args=(clients, args.interval, deadline, stop), daemon=True)
+    reporter.start()
+
+    for c in clients:
+        c.start()
+    for c in clients:
+        c.join()
+
+    stop.set()
+    reporter.join()
+    elapsed = time.monotonic() - t0
+
+    stats = snapshot(clients)
+    samples = sorted(l for c in clients for l in c.latencies)
+    total = stats['served']
+    latency_avg = sum(samples) / len(samples) if samples else 0.0
+
+    print()
+    print("=== summary ===")
+    print(f"duration        : {elapsed:.2f}s")
+    print(f"clients         : {args.clients}")
+    print(f"offered rate    : {offered}")
+    print(f"requests served : {total}")
+    print(f"throughput      : {total / elapsed:.1f} req/s")
+    print(f"errors          : {stats['errors']}")
+    print(f"bytes sent      : {stats['bytes_sent']}")
+    print(f"bytes received  : {stats['bytes_recv']}")
+    if samples:
+        print(f"response time   : min={samples[0] * 1000:.2f}ms "
+              f"avg={latency_avg * 1000:.2f}ms "
+              f"p50={percentile(samples, 50) * 1000:.2f}ms "
+              f"p95={percentile(samples, 95) * 1000:.2f}ms "
+              f"p99={percentile(samples, 99) * 1000:.2f}ms "
+              f"max={samples[-1] * 1000:.2f}ms")
+    else:
+        print("response time   : no samples")
+
+
+if __name__ == '__main__':
+    main()
