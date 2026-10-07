@@ -9,7 +9,7 @@ import sys
 import threading
 import time
 
-BANNER_LINES = 4
+BANNER_LINES = 5
 OPS = ('add', 'sub', 'div', 'mult', 'sqrt', 'mean', 'std')
 RETRIES = 3
 
@@ -171,7 +171,7 @@ def main():
     global t0
 
     parser = argparse.ArgumentParser(
-        prog='ssc-bench',
+        prog='sac-bench',
         description="Benchmark the SAC socket calculator.")
     parser.add_argument('-c', '--clients', type=int, default=1,
                         help="number of concurrent clients (default: 1)")
@@ -205,7 +205,7 @@ def main():
                for _ in range(args.clients)]
 
     offered = "unlimited" if args.rate == 0 else f"{args.clients * args.rate:.1f} req/s"
-    print(f"ssc-bench: {args.clients} clients, "
+    print(f"sac-bench: {args.clients} clients, "
           f"{'unlimited' if args.rate == 0 else f'{args.rate} req/s each'}, "
           f"(total {offered}), {args.duration}s "
           f"against {args.host}:{args.port}", flush=True)

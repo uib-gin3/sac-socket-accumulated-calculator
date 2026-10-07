@@ -8,9 +8,10 @@ import sys
 
 BANNER = (
     "GREETINGS PROFESSOR FALKEN.",
-    "DO YOU WANT TO PLAY CALCULATIONS?.",
-    "JUST SEND NUMBERS (ONE PER LINE) OR AN OPERATION.",
-    "AVAILABLE OPERATIONS: add, sub, div, mult, sqrt, mean, std, clear.",
+    "DO YOU WANT TO PLAY CALCULATIONS?",
+    "SEND NUMBERS (ONE PER LINE) OR AN OPERATION.",
+    "AVAILABLE OPERATIONS:",
+    "add, sub, div, mult, sqrt, mean, std, clear, stats, reset-stats quit",
 )
 OPERATIONS = ('clear', 'add', 'sub', 'div', 'mult', 'sqrt', 'mean', 'std')
 
@@ -45,7 +46,7 @@ def run(host, port, op, numbers):
 
 def main():
     parser = argparse.ArgumentParser(
-        prog='ssc-client',
+        prog='sac-client',
         description="Send numbers and an operation to the SAC socket calculator.")
     parser.add_argument('-H', '--host', default='127.0.0.1', help="server host (default: 127.0.0.1)")
     parser.add_argument('-p', '--port', type=int, default=1234, help="server port (default: 1234)")

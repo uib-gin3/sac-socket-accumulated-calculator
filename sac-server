@@ -7,7 +7,7 @@
 # Logging is possible by piping the output to a file or tee this avoid having
 # to use python logging feature and makes this code cleaner.
 #
-# ./ssc-server | tee scc-server.log
+# ./sac-server | tee sac-server.log
 #
 
 import re

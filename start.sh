@@ -1,3 +1,3 @@
 #!/bin/bash
 
-tmux start-server \; source-file ./ssc.tmux
+tmux start-server \; source-file ./sac.tmux

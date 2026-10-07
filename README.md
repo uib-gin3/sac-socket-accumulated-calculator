@@ -31,16 +31,16 @@ Run with tmux:
 
 It can also be executed manually:
 
-    - `ssc-server` starts the calulator server at port 1234
-    - `ssc-client` connects to the server a does a simple test
-    - `ssc-bench` benchmarks the servers
-    - `ssc-stats` print current stats based on the written log
+    - `sac-server` starts the calulator server at port 1234
+    - `sac-client` connects to the server a does a simple test
+    - `sac-bench` benchmarks the servers
+    - `sac-stats` print current stats based on the written log
 
 Once the server is started you can connect to it with netcat: `nc localhost 1234`
 
 Run the server:
 
-    ./ssc-server
+    ./sac-server
 
 Manually test the server:
 
@@ -56,9 +56,9 @@ Manually test the server:
     div
     # Will Respond Error: float division by zero
 
-Test the server with ssc-client
+Test the server with sac-client
 
-    ./ssc-client
+    ./sac-client
 
 
 Run the benchmark
@@ -71,7 +71,7 @@ Run the benchmark
 
 ## Server interface 
 
-The server (`ssc-server`) accepts a plain TCP connection on port 1234. The user send a number or operation per line.
+The server (`sac-server`) accepts a plain TCP connection on port 1234. The user send a number or operation per line.
 Numbers accumulate into a queue until an operation is send. The operation is applied to the accumulated numbres, cleaning the queue and just leaving the result so it can be used as the first value of the following operation.
 
 It has been implemented the `clear` statement to empty the queue.
@@ -95,8 +95,8 @@ AI tools has been used to check spell and grammar but never to be copy pasted bu
 
 This approch is to void or incentivating the humans to be [meat proxies](https://gruhn.me/blog/2026-08-03/)
 
-The code of ssc-server has been developed by hand old school way based on the XXXX of repoYYY. That way the coding agents had been able to take it as en example of with is the style for the other code so it near my _taste_.
+The code of sac-server has been developed by hand old school way based on the XXXX of repoYYY. That way the coding agents had been able to take it as en example of with is the style for the other code so it near my _taste_.
 
 - gemini-3.6-flash (web): Translate <assignment title> to english 
-- MiMo-2.6-flash (opencode): Develop the client ssc-client and ssc-bench
+- MiMo-2.6-flash (opencode): Develop the client sac-client and sac-bench
 - gemini-3.6-flash (web): Can you tellme which spell and grammar mistakes are on <content of REMDE.md>
