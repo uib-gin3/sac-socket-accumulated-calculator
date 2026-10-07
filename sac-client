@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 # This file has been fully vibe-coded with MiMo-2.6-Flash on OpenCode
+# Just a python demo of the client, not needed nor used for anything
+# other than test that it works.
 
 import argparse
 import socket

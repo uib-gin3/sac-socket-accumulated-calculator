@@ -4,7 +4,7 @@
 #
 # Based on the example: https://github.com/wisaaco/AA_DistributedSystems_Lab/blob/main/U1-Sockets/D_server_game.py
 #
-# Logging is possible by piping the output to a file or tee this avoid having
+# Logging is possible by piping the output to a file or tee to avoid having
 # to use python logging feature and makes this code cleaner.
 #
 # ./sac-server | tee sac-server.log
@@ -229,7 +229,7 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 if __name__=='__main__':
 
     # Kidna recursive acrynom following old unix traditions :)
-    print("SAC socket accumulator calculator")
+    print("SAC socket accumulated calculator")
 
     # Yes would be faciner to use click but that way is simpler and dep-free
     stats = '--no-stats' not in argv

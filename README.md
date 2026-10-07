@@ -1,12 +1,10 @@
 # Sac Sock Calc
 
-Sistemes Actuals de Computació Socket Calculator, first assignment of the SAC subject on first quarter of 2026-27.
-
-TODO table of contents and flow the reader thought the text
+Sistemes Actuals de Computació (SAC) first assignment: Socket Accumulated Calculator.
 
 ## Abstract
 
-To quick start this assignment run `./start.sh` it will start a tmux session with the server, the benchmark an a telnet to also manually test the server.
+To quick start this assignment run `./start.sh` it will start a tmux session with the server, the benchmark an a netcat to also manually test the server.
 
 The development has been done following KISS (Keep it Simple Supid) and UNIX philosophy (do one thing and do it well), it uses standard python (tested with python 3.13) without needing virtualenv nor containers.
 
@@ -63,11 +61,16 @@ Test the server with sac-client
 
 Run the benchmark
 
-    x
+    ./sac-bench -c 5 -r 10 -d 30
 
+You can also watch the stats with
+
+    ./sac-stats
 
 
 ## Architecture
+
+Uses a threaded python.
 
 ## Server interface 
 
@@ -80,13 +83,7 @@ It has been implemented the `clear` statement to empty the queue.
 
 ## Test
 
-## Conclusions
-
-## Render README
-
-This readme can be open as-is or rendered into a PDF with some fancy styles with:
-
-    TODO command to generate the PDF.
+## Observations
 
 ## AI usage
 
@@ -98,5 +95,5 @@ This approch is to void or incentivating the humans to be [meat proxies](https:/
 The code of sac-server has been developed by hand old school way based on the XXXX of repoYYY. That way the coding agents had been able to take it as en example of with is the style for the other code so it near my _taste_.
 
 - gemini-3.6-flash (web): Translate <assignment title> to english 
-- MiMo-2.6-flash (opencode): Develop the client sac-client and sac-bench
+- MiMo-2.6-flash (opencode): Develop the client sac-client, sac-bench, sac.tmux
 - gemini-3.6-flash (web): Can you tellme which spell and grammar mistakes are on <content of REMDE.md>
