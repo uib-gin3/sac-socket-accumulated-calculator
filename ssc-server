@@ -1,24 +1,63 @@
 #!/usr/bin/env python3
 
+# This file has developed fully by hand without LLM intervention, is the fun part :)
+#
+# Based on the example: https://github.com/wisaaco/AA_DistributedSystems_Lab/blob/main/U1-Sockets/D_server_game.py
+#
+# Logging is possible by piping the output to a file or tee this avoid having
+# to use python logging feature and makes this code cleaner.
+#
+# ./ssc-server | tee scc-server.log
+#
+
+import re
+import threading
+import socketserver
+
 from math import sqrt
 from statistics import mean, stdev
 
-import socketserver
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     daemon_threads = True
     allow_reuse_address = True
 
+    # Default response time window to 1000 which fits ~30s of the benchmark
+    def __init__(self, server_address, RequestHandlerClass, stats=True,
+                 response_time_window=1000, bind_and_activate=True):
+        super().__init__(server_address, RequestHandlerClass, bind_and_activate)
+
+        self.stats = stats
+        if stats:
+            self.active_connections = 0
+            self.bytes_send = 0
+            self.bytes_received = 0
+            self.operations_processed = 0
+            self.errors = 0 
+
+            # We will keep an array of the last `response_time_window` response
+            # times so we can do some stats.
+            self.response_time_window = response_time_window
+            self.response_times = []
+
+            # We'll need some concurrency control to avoid messing up the stats
+            # This WILL impact performance, that is why stats can be shutdown
+            # with stats=False
+            self.connections_lock = threading.Lock()
+
 
 class SacSockCalHandler(socketserver.StreamRequestHandler):
     def handle(self):
         self.wfile.write("GREETINGS PROFESSOR FALKEN.\n".encode('utf-8'))
+        self.wfile.write("DO YOU WANT TO PLAY CALCULATIONS?.\n".encode('utf-8'))
+        self.wfile.write("JUST SEND NUMBERS (ONE PER LINE) OR AN OPERATION.\n".encode('utf-8'))
+        self.wfile.write("AVAILABLE OPERATIONS: add, sub, div, mult, sqrt, mean, std, clear.\n".encode('utf-8'))
 
         mem = []
         while True:
 
             received = self.rfile.readline()
-    
+
             try:
                 number = int(received)
                 print(f"Received number: {number}")
@@ -28,7 +67,10 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
                 number = None
 
             try:
-                operation = received.decode('utf-8').strip()
+                # Get the user input with some sanitize
+                operation_raw = received.decode('utf-8').strip().lower()
+                operation = re.sub(r'[^a-z0-9.-]', '', operation_raw)
+
                 print(f"Received operation: {operation}")
             except (UnicodeDecodeError, LookupError, ValueError, TypeError):
                 operation = None
@@ -43,7 +85,9 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 
                 elif operation == 'add':
                     print(f"Applying add to current memory: {mem}")
-                    result = mem.pop(0) # FIFO
+                    # Using FIFO queue to process because non-commutative
+                    # operations would fail otherwise
+                    result = mem.pop(0) 
                     while len(mem):
                         item = mem.pop(0) 
                         result += item
@@ -93,17 +137,26 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 
             except IndexError:
                 result = "Error: Missing value"
+            except ArithmeticError as exc:
+                result = f"Error: {exc}"
 
+            # Just store numbers not errors
             if result and type(result) in (int, float):
                 mem.append(result)
 
             print(f"Mem is {mem}")
-            self.wfile.write(f"{result}\n".encode('utf-8'))
+            try:
+                self.wfile.write(f"{result}\n".encode('utf-8'))
+            except BrokenPipeError:
+                print("Client disconnected")
+                break
 
 
 if __name__=='__main__':
     print("SAC sock calc")
 
+    # 1234 is a nice number for a port for a calculator
+    # also a great password :D
     server = ThreadedTCPServer(('', 1234), SacSockCalHandler)
 
     try:
