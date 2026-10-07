@@ -29,10 +29,11 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
         self.stats = stats
         if stats:
+            self.connections = 0
             self.active_connections = 0
-            self.bytes_send = 0
-            self.bytes_received = 0
-            self.operations_processed = 0
+            self.bytes_in = 0
+            self.bytes_out = 0
+            self.operations = 0
             self.errors = 0 
 
             # We will keep an array of the last `response_time_window` response
@@ -45,6 +46,16 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
             # with stats=False
             self.connections_lock = threading.Lock()
 
+    def pretty_stats(self):
+        return (
+            f"active_connections: {self.active_connections}\n"
+            f"connections: {self.active_connections}\n"
+            f"bytes_in: {self.bytes_in}\n"
+            f"bytes_out: {self.bytes_out}\n"
+            f"operations: {self.operations}\n"
+            f"errors: {self.errors}"
+        )
+
 
 class SacSockCalHandler(socketserver.StreamRequestHandler):
     def handle(self):
@@ -53,10 +64,19 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
         self.wfile.write("JUST SEND NUMBERS (ONE PER LINE) OR AN OPERATION.\n".encode('utf-8'))
         self.wfile.write("AVAILABLE OPERATIONS: add, sub, div, mult, sqrt, mean, std, clear.\n".encode('utf-8'))
 
+        if self.server.stats:
+            with self.server.connections_lock:
+                self.server.connections += 1
+                self.server.active_connections += 1
+
         mem = []
         while True:
 
             received = self.rfile.readline()
+
+            if self.server.stats:
+                with self.server.connections_lock:
+                    self.server.bytes_in += len(received)
 
             try:
                 number = int(received)
@@ -132,24 +152,62 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
                     else:
                         result = 'Error: More than one needed'
 
+                elif operation == 'stats':
+                    if self.server.stats:
+                        result = self.server.pretty_stats()
+                    else:
+                        result = 'Error: stats disabled'
+
+                elif operation == 'reset-stats':
+                    print("Resetting stats")
+                    if self.server.stats:
+                        self.server.bytes_in = 0
+                        self.server.bytes_out = 0
+                        self.server.operations = 0
+                        self.server.errors = 0 
+                        result = "Stats resetted"
+                    else:
+                        result = 'Error: stats disabled'
+
                 else:
                     result = "Error: Unknown operation"
 
             except IndexError:
                 result = "Error: Missing value"
+                if self.server.stats:
+                    with self.server.connections_lock:
+                        self.server.errors += 1
+
             except ArithmeticError as exc:
                 result = f"Error: {exc}"
+                if self.server.stats:
+                    with self.server.connections_lock:
+                        self.server.errors += 1
 
-            # Just store numbers not errors
+            # Just manipulate the memory if no error
             if result and type(result) in (int, float):
+                if self.server.stats:
+                    with self.server.connections_lock:
+                        self.server.operations += 1
                 mem.append(result)
 
             print(f"Mem is {mem}")
             try:
-                self.wfile.write(f"{result}\n".encode('utf-8'))
+                out = f"{result}\n".encode('utf-8')
+
+                if self.server.stats:
+                    with self.server.connections_lock:
+                        # Showing stats also modifies bytes out!
+                        self.server.bytes_out += len(out)
+
+                self.wfile.write(out)
             except BrokenPipeError:
                 print("Client disconnected")
+                if self.server.stats:
+                    with self.server.connections_lock:
+                        self.server.active_connections -= 1
                 break
+
 
 
 if __name__=='__main__':
