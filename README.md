@@ -1,4 +1,4 @@
-# Sac Sock Calc
+# SAC Socket Accumulated Calculator
 
 Sistemes Actuals de Computació (SAC) first assignment: Socket Accumulated Calculator.
 
