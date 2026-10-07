@@ -19,6 +19,14 @@ During execution, log at least the number of active connections, the requests se
 
 Justify the design and implementation considerations made under the DS (Distributed Systems) paradigm.
 
+## Setup
+
+It is recomended to have python >= 3.6, tmux, watch and netcat (openbsd vesion).
+
+This has been tested on Ubuntu 24.04 and python 3.13
+
+No additional packages required, o docker, no uv. Just standard python and unix tools available in almost any system.
+
 ## Usage example
 
 The recommeded way to execute it is using a tmux script that will split the terminal and suggest the appropiate commands.
@@ -31,7 +39,7 @@ It can also be executed manually:
 
     - `sac-server` starts the calulator server at port 1234
     - `sac-client` connects to the server a does a simple test
-    - `sac-bench` benchmarks the servers
+    - `sac-bench` benchmarks the server
     - `sac-stats` print current stats based on the written log
 
 Once the server is started you can connect to it with netcat: `nc localhost 1234`
@@ -39,6 +47,8 @@ Once the server is started you can connect to it with netcat: `nc localhost 1234
 Run the server:
 
     ./sac-server
+
+The server can also be stared with `--no-stats` to avoid registring stats.
 
 Manually test the server:
 
@@ -57,7 +67,6 @@ Manually test the server:
 Test the server with sac-client
 
     ./sac-client
-
 
 Run the benchmark
 
