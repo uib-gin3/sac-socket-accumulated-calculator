@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# This file has developed fully by hand without LLM intervention, is the fun part :)
+# This file has been developed fully by hand without LLM intervention, is the fun part :)
 #
 # Based on the example: https://github.com/wisaaco/AA_DistributedSystems_Lab/blob/main/U1-Sockets/D_server_game.py
 #
@@ -59,11 +59,25 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
 
 class SacSockCalHandler(socketserver.StreamRequestHandler):
+
+
+    def send_line(self, message, skip_stats=False):
+        out = f"{message}\n".encode('utf-8')
+        self.wfile.write(out)
+
+        print(skip_stats)
+        print(message)
+        if self.server.stats and not skip_stats:
+            with self.server.connections_lock:
+                self.server.bytes_out += len(out)
+
+
     def handle(self):
-        self.wfile.write("GREETINGS PROFESSOR FALKEN.\n".encode('utf-8'))
-        self.wfile.write("DO YOU WANT TO PLAY CALCULATIONS?.\n".encode('utf-8'))
-        self.wfile.write("JUST SEND NUMBERS (ONE PER LINE) OR AN OPERATION.\n".encode('utf-8'))
-        self.wfile.write("AVAILABLE OPERATIONS: add, sub, div, mult, sqrt, mean, std, clear.\n".encode('utf-8'))
+        self.send_line("GREETINGS PROFESSOR FALKEN.", skip_stats=True)
+        self.send_line("DO YOU WANT TO PLAY CALCULATIONS?", skip_stats=True)
+        self.send_line("SEND NUMBERS (ONE PER LINE) OR AN OPERATION.", skip_stats=True)
+        self.send_line("AVAILABLE OPERATIONS:", skip_stats=True)
+        self.send_line("add, sub, div, mult, sqrt, mean, std, clear, stats, reset-stats quit", skip_stats=True)
 
         if self.server.stats:
             with self.server.connections_lock:
@@ -80,23 +94,20 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
                     self.server.bytes_in += len(received)
 
             try:
+                # Get the user input with some sanitize
+                raw = received.decode('utf-8').strip().lower()
                 number = int(received)
                 print(f"Received number: {number}")
                 mem.append(number)
                 continue
             except ValueError:
                 number = None
-
-            try:
-                # Get the user input with some sanitize
-                operation_raw = received.decode('utf-8').strip().lower()
-                operation = re.sub(r'[^a-z0-9.-]', '', operation_raw)
-
-                print(f"Received operation: {operation}")
             except (UnicodeDecodeError, LookupError, ValueError, TypeError):
                 operation = None
                 print("Invalid data, ignoring")
 
+            operation = re.sub(r'[^a-z0-9.-]', '', raw)
+            print(f"Received operation: {operation}")
  
             try:
                 if operation == 'clear':
@@ -155,6 +166,9 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 
                 elif operation == 'stats':
                     if self.server.stats:
+                        # Avoid counting stats bytes
+                        self.server.bytes_in -= len(received)
+
                         result = self.server.pretty_stats()
                     else:
                         result = 'Error: stats disabled'
@@ -169,6 +183,13 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
                         result = "Stats resetted"
                     else:
                         result = 'Error: stats disabled'
+
+                elif operation == 'quit':
+                    print("Client closed the connection")
+                    if self.server.stats:
+                        with self.server.connections_lock:
+                            self.server.active_connections -= 1
+                    break
 
                 else:
                     result = "Error: Unknown operation"
@@ -194,14 +215,8 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 
             print(f"Mem is {mem}")
             try:
-                out = f"{result}\n".encode('utf-8')
-
-                if self.server.stats:
-                    with self.server.connections_lock:
-                        # Showing stats also modifies bytes out!
-                        self.server.bytes_out += len(out)
-
-                self.wfile.write(out)
+                skip_stats = operation == 'stats'
+                self.send_line(result, skip_stats=skip_stats)
             except BrokenPipeError:
                 print("Client disconnected")
                 if self.server.stats:
@@ -213,7 +228,7 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 
 if __name__=='__main__':
 
-    # Kidna recursive acrynom like any good gnu program :)
+    # Kidna recursive acrynom following old unix traditions :)
     print("SAC socket accumulator calculator")
 
     # Yes would be faciner to use click but that way is simpler and dep-free
