@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
-# This file has been developed fully by hand without LLM intervention, is the fun part :)
+# This file was developed entirely by hand without LLM intervention,
+# that's the fun part!.
 #
 # Based on the example: https://github.com/wisaaco/AA_DistributedSystems_Lab/blob/main/U1-Sockets/D_server_game.py
 #
-# Logging is possible by piping the output to a file or tee to avoid having
-# to use python logging feature and makes this code cleaner.
+# Logging can be done by piping the output to a file or using tee.
+# This avoids the need for Python's built-in logging module and keeps
+# the code cleaner.
 #
 # ./sac-server | tee sac-server.log
 #
@@ -71,24 +73,25 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 
     def send_line(self, message, skip_stats=False):
         out = f"{message}\n".encode('utf-8')
-        self.wfile.write(out)
 
+        self.wfile.write(out)
         size = len(out)
 
         if self.server.stats and not skip_stats:
             with self.server.connections_lock:
                 self.server.bytes_out += size
 
-        
         logger.debug(f"Send {size} bytes: '{message}'")
        
 
     def handle(self):
         self.send_line("GREETINGS PROFESSOR FALKEN.", skip_stats=True)
         self.send_line("DO YOU WANT TO PLAY CALCULATIONS?", skip_stats=True)
-        self.send_line("SEND NUMBERS (ONE PER LINE) OR AN OPERATION.", skip_stats=True)
+        self.send_line("SEND NUMBERS (ONE PER LINE) OR AN OPERATION.",
+                       skip_stats=True)
         self.send_line("AVAILABLE OPERATIONS:", skip_stats=True)
-        self.send_line("add, sub, div, mult, sqrt, mean, std, clear, stats, reset-stats quit", skip_stats=True)
+        self.send_line("add, sub, div, mult, sqrt, mean, std, clear, " + 
+                       "stats, reset-stats quit", skip_stats=True)
 
         if self.server.stats:
             with self.server.connections_lock:
@@ -245,12 +248,20 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 
                     max_tw = self.server.response_times_window
                     with self.server.connections_lock:
+                        # Using position as keys of the dict
+                        # better than a list because is self initialized
                         pos = self.server.response_times_pos
                         self.server.response_times[pos] = response_time
                         self.server.response_times_pos = (pos + 1) % max_tw
 
-                    average = mean(self.server.response_times)
-                    p95 = quantiles(self.server.response_times, n=100)[94]
+                    response_times_list = self.server.response_times.values()
+                    # Not always a good measuere but a common one
+                    average = mean(response_times_list)
+                    # p95 is more significant than the average when related to
+                    # response times. Inclisve is importad while the sample is
+                    # still small
+                    p95 = quantiles(
+                        response_times_list, n=100, method='inclusive')[94]
 
                     logger.debug(f"Responded in {response_time * 1000:.2f}ms")
                     logger.debug(f"avg: {average * 1000:.2f}ms")
