@@ -21,7 +21,7 @@ Justify the design and implementation considerations made under the DS (Distribu
 
 ## Setup
 
-It is recomended to have python >= 3.6, tmux, watch and netcat (openbsd vesion).
+It is needed to have python >= 3.8, tmux, watch and netcat (openbsd vesion).
 
 This has been tested on Ubuntu 24.04 and python 3.13
 

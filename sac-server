@@ -11,13 +11,17 @@
 #
 
 import re
+import time
 import logging
 import threading
 import socketserver
 
 from sys import argv
 from math import sqrt
-from statistics import mean, stdev
+
+# Increases required python version to 3.8
+# with --no-stats probably can run 3.6 or below
+from statistics import mean, stdev, quantiles
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +32,7 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
     # Default response time window to 1000 which fits ~30s of the benchmark
     def __init__(self, server_address, RequestHandlerClass, stats=True,
-                 response_time_window=1000, bind_and_activate=True):
+                 response_times_window=1000, bind_and_activate=True):
         super().__init__(server_address, RequestHandlerClass, bind_and_activate)
 
         self.stats = stats
@@ -42,8 +46,9 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
             # We will keep an array of the last `response_time_window` response
             # times so we can do some stats.
-            self.response_time_window = response_time_window
-            self.response_times = []
+            self.response_times_window = response_times_window
+            self.response_times = {}
+            self.response_times_pos = 0
 
             # We'll need some concurrency control to avoid messing up the stats
             # This WILL impact performance, that is why stats can be shutdown
@@ -68,12 +73,15 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
         out = f"{message}\n".encode('utf-8')
         self.wfile.write(out)
 
+        size = len(out)
+
         if self.server.stats and not skip_stats:
             with self.server.connections_lock:
-                self.server.bytes_out += len(out)
+                self.server.bytes_out += size
 
-        logger.debug(f"Send {len(out)} bytes: '{message}'")
-
+        
+        logger.debug(f"Send {size} bytes: '{message}'")
+       
 
     def handle(self):
         self.send_line("GREETINGS PROFESSOR FALKEN.", skip_stats=True)
@@ -93,6 +101,7 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
             received = self.rfile.readline()
 
             if self.server.stats:
+                start_time = time.perf_counter()
                 with self.server.connections_lock:
                     self.server.bytes_in += len(received)
 
@@ -223,8 +232,30 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 
             logger.debug(f"Mem is {mem}")
             try:
+                # Skip stats on stats command as it is a little different
+                # and time consuming than others and we want to reduce heisenbug
                 skip_stats = operation == 'stats'
                 self.send_line(result, skip_stats=skip_stats)
+
+                # Count also time to respond as response_time
+                # not just calculation time that would be
+                # taking the measure BEFORE the send_line
+                if self.server.stats and not skip_stats:
+                    response_time = time.perf_counter() - start_time
+
+                    max_tw = self.server.response_times_window
+                    with self.server.connections_lock:
+                        pos = self.server.response_times_pos
+                        self.server.response_times[pos] = response_time
+                        self.server.response_times_pos = (pos + 1) % max_tw
+
+                    average = mean(self.server.response_times)
+                    p95 = quantiles(self.server.response_times, n=100)[94]
+
+                    logger.debug(f"Responded in {response_time * 1000:.2f}ms")
+                    logger.debug(f"avg: {average * 1000:.2f}ms")
+                    logger.debug(f"p95: {p95 * 1000:.2f}ms")
+
             except BrokenPipeError:
                 logger.debug("Client disconnected")
                 if self.server.stats:
