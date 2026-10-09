@@ -4,13 +4,6 @@
 # that's the fun part!.
 #
 # Based on the example: https://github.com/wisaaco/AA_DistributedSystems_Lab/blob/main/U1-Sockets/D_server_game.py
-#
-# Logging can be done by piping the output to a file or using tee.
-# This avoids the need for Python's built-in logging module and keeps
-# the code cleaner.
-#
-# ./sac-server | tee sac-server.log
-#
 
 import re
 import time
@@ -103,6 +96,12 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 
             received = self.rfile.readline()
 
+            if not received:
+                logger.debug("Client closed the connection")
+                if self.server.stats:
+                    with self.server.connections_lock:
+                        self.server.active_connections -= 1
+
             if self.server.stats:
                 start_time = time.perf_counter()
                 with self.server.connections_lock:
@@ -110,17 +109,13 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 
             try:
                 # Get the user input with some sanitize
-                raw = received.decode('utf-8').strip().lower()
+                raw = received.decode('utf-8', errors='replace').strip().lower()
                 number = int(received)
                 logger.debug(f"Received number: {number}")
                 mem.append(number)
                 continue
             except ValueError:
                 number = None
-            except (UnicodeDecodeError, LookupError, ValueError, TypeError):
-                logger.error("Invalid data, ignoring")
-                logger.error(exc)
-                operation = None
 
             operation = re.sub(r'[^a-z0-9.-]', '', raw)
             logger.debug(f"Received operation: {operation}")
@@ -210,7 +205,7 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
                 else:
                     result = "Error: Unknown operation"
 
-            except IndexError:
+            except IndexError as exc:
                 logger.error(exc)
                 result = "Error: Missing value"
                 if self.server.stats:
@@ -231,7 +226,8 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
                         self.server.operations += 1
                 mem.append(result)
             else:
-                logger.debug(f"User error: '{result}'")
+                if isinstance(result, str) and result.startswith('Error'):
+                    logger.debug(f"User error: '{result}'")
 
             logger.debug(f"Mem is {mem}")
             try:
@@ -267,7 +263,7 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
                     logger.debug(f"avg: {average * 1000:.2f}ms")
                     logger.debug(f"p95: {p95 * 1000:.2f}ms")
 
-            except BrokenPipeError:
+            except (BrokenPipeError, ConnectionResetError):
                 logger.debug("Client disconnected")
                 if self.server.stats:
                     with self.server.connections_lock:
