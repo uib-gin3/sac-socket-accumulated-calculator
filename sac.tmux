@@ -21,7 +21,7 @@
 # run-shell is synchronous, so the queue stops here until it finishes.
 run-shell "if tmux has-session -t =sac 2>/dev/null; then tmux kill-session -t =sac && sleep 0.5; fi"
 
-new-session -d -s sac -n sac "./sac-server; echo 'type tmux kill-server to exit'; exec bash"
+new-session -d -s sac -n sac "./sac-server --debug; echo 'type tmux kill-server to exit'; exec bash"
 split-window -h -t sac:0.0 -c "#{pane_current_path}" "printf \"I'm about to execute the benchmark during 30 seconds with the command ./sac-bench -c 5 -r 10 -d 30.\\nDo you want to proceed [Y/n]? \"; read ans || ans=n; case \"\$ans\" in [Yy]|\"\") sleep 0.5; ./sac-bench -c 5 -r 10 -d 30;; esac; echo 'type tmux kill-server to exit'; exec bash"
 split-window -v -t sac:0.1 -c "#{pane_current_path}" "sleep 0.5; nc localhost 1234; exec bash"
 select-pane -t sac:0.1
