@@ -1,0 +1,8 @@
+active_connections: 1
+connections: 1
+bytes_in: 127249
+bytes_out: 27658
+operations: 1313
+errors: 0
+avg response time: 0.53ms
+p95 response time: 1.91ms
