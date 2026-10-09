@@ -11,6 +11,7 @@
 #
 
 import re
+import logging
 import threading
 import socketserver
 
@@ -18,6 +19,8 @@ from sys import argv
 from math import sqrt
 from statistics import mean, stdev
 
+
+logger = logging.getLogger(__name__)
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     daemon_threads = True
@@ -65,11 +68,11 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
         out = f"{message}\n".encode('utf-8')
         self.wfile.write(out)
 
-        print(skip_stats)
-        print(message)
         if self.server.stats and not skip_stats:
             with self.server.connections_lock:
                 self.server.bytes_out += len(out)
+
+        logger.debug(f"Send {len(out)} bytes: '{message}'")
 
 
     def handle(self):
@@ -97,35 +100,39 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
                 # Get the user input with some sanitize
                 raw = received.decode('utf-8').strip().lower()
                 number = int(received)
-                print(f"Received number: {number}")
+                logger.debug(f"Received number: {number}")
                 mem.append(number)
                 continue
             except ValueError:
                 number = None
             except (UnicodeDecodeError, LookupError, ValueError, TypeError):
+                logger.error("Invalid data, ignoring")
+                logger.error(exc)
                 operation = None
-                print("Invalid data, ignoring")
 
             operation = re.sub(r'[^a-z0-9.-]', '', raw)
-            print(f"Received operation: {operation}")
+            logger.debug(f"Received operation: {operation}")
  
             try:
                 if operation == 'clear':
-                    print(f"Clearing")
+                    logger.debug(f"Clearing")
                     mem = [] 
                     result = ''
 
                 elif operation == 'add':
-                    print(f"Applying add to current memory: {mem}")
+                    logger.debug(f"Applying add to current memory: {mem}")
                     # Using FIFO queue to process because non-commutative
                     # operations would fail otherwise
+                    # Would be possible to do more sophisticated thinghs
+                    # like operation trees but this is a sockets assignement
+                    # not data structures :)
                     result = mem.pop(0) 
                     while len(mem):
                         item = mem.pop(0) 
                         result += item
 
                 elif operation == 'sub':
-                    print(f"Applying sub to current memory: {mem}")
+                    logger.debug(f"Applying sub to current memory: {mem}")
                     result = mem.pop(0)
                     while len(mem):
                         item = mem.pop(0) 
@@ -151,11 +158,8 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
                         result = 'Error: More than one value'
 
                 elif operation == 'mean':
-                    if len(mem) > 1:
-                        result = mean(mem)
-                        mem = []
-                    else:
-                        result = 'Error: More than one needed'
+                    result = mean(mem)
+                    mem = []
 
                 elif operation == 'std':
                     if len(mem) > 1:
@@ -174,7 +178,7 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
                         result = 'Error: stats disabled'
 
                 elif operation == 'reset-stats':
-                    print("Resetting stats")
+                    logger.debug("Resetting stats")
                     if self.server.stats:
                         self.server.bytes_in = 0
                         self.server.bytes_out = 0
@@ -185,7 +189,7 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
                         result = 'Error: stats disabled'
 
                 elif operation == 'quit':
-                    print("Client closed the connection")
+                    logger.debug("Client closed the connection")
                     if self.server.stats:
                         with self.server.connections_lock:
                             self.server.active_connections -= 1
@@ -195,12 +199,14 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
                     result = "Error: Unknown operation"
 
             except IndexError:
+                logger.error(exc)
                 result = "Error: Missing value"
                 if self.server.stats:
                     with self.server.connections_lock:
                         self.server.errors += 1
 
             except ArithmeticError as exc:
+                logger.error(exc)
                 result = f"Error: {exc}"
                 if self.server.stats:
                     with self.server.connections_lock:
@@ -212,13 +218,15 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
                     with self.server.connections_lock:
                         self.server.operations += 1
                 mem.append(result)
+            else:
+                logger.debug(f"User error: '{result}'")
 
-            print(f"Mem is {mem}")
+            logger.debug(f"Mem is {mem}")
             try:
                 skip_stats = operation == 'stats'
                 self.send_line(result, skip_stats=skip_stats)
             except BrokenPipeError:
-                print("Client disconnected")
+                logger.debug("Client disconnected")
                 if self.server.stats:
                     with self.server.connections_lock:
                         self.server.active_connections -= 1
@@ -227,13 +235,18 @@ class SacSockCalHandler(socketserver.StreamRequestHandler):
 
 
 if __name__=='__main__':
-
-    # Kidna recursive acrynom following old unix traditions :)
-    print("SAC socket accumulated calculator")
-
     # Yes would be faciner to use click but that way is simpler and dep-free
     stats = '--no-stats' not in argv
+    log_level = logging.DEBUG if '--debug' in argv else logging.INFO
 
+    logging.basicConfig(
+        level=log_level,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+    # Kidna recursive acrynom following old unix traditions :)
+    logger.info("SAC socket accumulated calculator")
 
     # 1234 is a nice number for a port of a calculator, also a great password :D
     server = ThreadedTCPServer(('', 1234), SacSockCalHandler, stats=stats)
@@ -244,3 +257,4 @@ if __name__=='__main__':
         pass
 
     server.server_close()
+    logger.info('Bye!')
