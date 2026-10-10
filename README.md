@@ -48,7 +48,6 @@ It can also be executed manually:
     - `sac-bench` benchmarks the server
     - `sac-stats` prints current stats and watches them every 2 seconds
 
-
 Run the server:
 
     ./sac-server --debug
@@ -126,5 +125,6 @@ This approach is to avoid being a [meat proxy](https://gruhn.me/blog/2026-08-03/
 The code of sac-server has been developed by hand, old-school way, based on https://github.com/wisaaco/AA_DistributedSystems_Lab/blob/main/U1-Sockets/D_server_game.py. The other scripts sac-client, sac-bench and sac.tmux have been vibe-coded taking as context sac-server, that way the architecture has been human-defined and the coding agents have been able to take it as an example. By doing so also the agents understand my _taste_ and try to produce similar code.
 
 - gemini-3.6-flash (web): Translate <assignment title> to English
+- gemini-3.6-flash (web): Many lookups of information about python libraries
 - MiMo-2.6-flash (opencode): Develop the client sac-client, sac-bench, sac.tmux
-- gemini-3.6-flash (web): Can you tell me which spell and grammar mistakes are on <content of README.md>
+- MiMo-2.6-flash (opencode): Can you check spell and grammar of README.md. Suggest the minimal changes keeping the style.
