@@ -4,11 +4,11 @@ Sistemes Actuals de Computació (SAC) first assignment: Socket Accumulated Calcu
 
 ## Abstract
 
-To quick start this assignment run `./start.sh` it will start a tmux session with the server, the benchmark and a netcat to manually send operations to test the server.
+To quick start this assignment, run `./start.sh`; it will start a tmux session with the server, the benchmark and a netcat to manually send operations to test the server.
 
-The development has been done following KISS (Keep it Simple Supid) and UNIX philosophy (do one thing and do it well). Standard python has been used, should work with >=3.8 but tested with python 3.13 without needing virtualenvs nor containers.
+The development has been done following KISS (Keep it Simple Stupid) and UNIX philosophy (do one thing and do it well). Standard python has been used; it should work with >=3.8 but was tested with python 3.13 without needing virtualenvs nor containers.
 
-Implemented a simple calculator that accumlates numbers and then applies the operation. The result is kept to be used by the next operation.
+Implemented a simple calculator that accumulates numbers and then applies the operation. The result is kept to be used by the next operation.
 
 
 ## Assignment
@@ -24,18 +24,18 @@ Justify the design and implementation considerations made under the DS (Distribu
 
 ## Setup
 
-It is needed to have python >= 3.8, tmux, watch and netcat (openbsd vesion) on Debian/Ubuntu:
+It is needed to have python >= 3.8, tmux, watch and netcat (openbsd version) on Debian/Ubuntu:
 
     apt install python3 netcat-openbsd tmux watch
 
 This has been tested successfully on Debian 13 and Ubuntu 24.04.
 
-No additional packages required nor docker nor uv. Just standard python and unix tools available in almost any system.
+No additional packages required, neither docker nor uv. Just standard python and unix tools available in almost any system.
 
 
 ## Usage example
 
-The recommeded way to execute it is using a tmux script that will split the terminal (tmux) and suggest the appropiate commands.
+The recommended way to execute it is using a tmux script that will split the terminal (tmux) and suggest the appropriate commands.
 
 Run with tmux:
 
@@ -43,17 +43,17 @@ Run with tmux:
 
 It can also be executed manually:
 
-    - `sac-server` starts the calulator server at port 1234
-    - `sac-client` connects to the server a does a simple test
+    - `sac-server` starts the calculator server at port 1234
+    - `sac-client` connects to the server and does a simple test
     - `sac-bench` benchmarks the server
-    - `sac-stats` print current stats and watch them every 2 seconds
+    - `sac-stats` prints current stats and watches them every 2 seconds
 
 
 Run the server:
 
     ./sac-server --debug
 
-The server can also be stared with `--no-stats` to avoid registring stats.
+The server can also be started with `--no-stats` to avoid registering stats.
 
 Once the server is started you can connect to it with netcat: `nc localhost 1234`
 
@@ -69,13 +69,13 @@ Manually test the server:
     # Will respond 2.4494...
     0
     div
-    # Will Respond Error: float division by zero
+    # Will respond Error: float division by zero
     stats
     # Will show the stats
     reset-stats
     quit
 
-Test the server with sac-client, it will use a default an opertion:
+Test the server with sac-client, it will use a default operation:
 
     ./sac-client
 
@@ -83,48 +83,48 @@ Run the benchmark:
 
     ./sac-bench -c 5 -r 10 -d 30
 
-While running the benchmark is interesing to watch the statats with:
+While running the benchmark it is interesting to watch the stats with:
 
     ./sac-stats
 
-## Server interface 
+## Server interface
 
-The server (`sac-server`) accepts a plain TCP connection on port 1234. The user send a number or operation per line.
-Numbers accumulate into a queue until an operation is send. The operation is applied to the accumulated numbres, cleaning the queue and just leaving the result so it can be used as the first value of the following operation.
+The server (`sac-server`) accepts a plain TCP connection on port 1234. The user sends a number or operation per line.
+Numbers accumulate into a queue until an operation is sent. The operation is applied to the accumulated numbers, cleaning the queue and just leaving the result so it can be used as the first value of the following operation.
 
-Additional commands has been implemented:
+Additional commands have been implemented:
 
-- `clear` to clear the send numbers and the accumualted result
-- `stats` show statistics about the server
-- `reset-stats` reset statistic counters
+- `clear` to clear the sent numbers and the accumulated result
+- `stats` to show statistics about the server
+- `reset-stats` to reset statistic counters
 - `quit` to gracefully close the connection
 
 
 ## Design decisions
 
-Documented within the code to be eaiser to understand.
+Documented within the code to be easier to understand.
 
 ## Observations
-"Works on my machine" logs of the execution are commited inside the log directory.
+"Works on my machine" logs of the execution are committed inside the log directory.
 
-The benchmark percives a p95 response time of 44.91ms while the server that just counts the operation but not the receive and send is 1.91ms. That means that consumed by the socket and networking.
+The benchmark perceives a p95 response time of 44.91ms while the server, that just counts the operation but not the receive and send, is 1.91ms. That means the difference is consumed by the socket and networking.
 
-There are no significant differences with `--no-stats` contributing to the hypotesis that most of the time is used by the socket / OS / Python threading rather than the code itself. 
+There are no significant differences with `--no-stats` contributing to the hypothesis that most of the time is spent on the socket / OS / Python threading rather than the code itself.
 
-Would be interesting to implement this in other languages to see the difference.
+It would be interesting to implement this in other languages to see the difference.
 
 ## AI usage
 
-None of the text intented to be read by a human has been generated nor processed by any AI tool, otherwise most of the texts (code) intented to be procecess by a machine has been generated by AI Agents (OpenCode)
+None of the text intended to be read by a human has been generated or processed by any AI tool, whereas most of the texts (code) intended to be processed by a machine have been generated by AI Agents (OpenCode)
 
-Now a days is extremely easy to produce tons of text. I could ask OpenCode to write this file and look amazing but I've tried to keep the assigment within its bounds to just show the hability to use sockets and have some mind using them.
+Nowadays it is extremely easy to produce tons of text. I could ask OpenCode to write this file and look amazing, but I've tried to keep the assignment within its bounds to just show the ability to use sockets and put some thought into using them.
 
-AI tools has been used to check spell and grammar but never to be copy pasted but undrestood the mistakes and edited manually on the original text.
+AI tools have been used to check spelling and grammar but never to be copy-pasted: instead, the mistakes are understood and edited manually in the original text.
 
-This approch is to avoid being a [meat proxy](https://gruhn.me/blog/2026-08-03/)
+This approach is to avoid being a [meat proxy](https://gruhn.me/blog/2026-08-03/).
 
-The code of sac-server has been developed by hand old school way based on https://github.com/wisaaco/AA_DistributedSystems_Lab/blob/main/U1-Sockets/D_server_game.py. The other scripts sac-client, sac-bench and sac.tmux has been vibe coded taking as context sac-server, that way the architecture has been humand defined and the coding agents had been able to take it as en example. By doing so also the agents understands my _taste_ and tries to produce similar code.
+The code of sac-server has been developed by hand, old-school way, based on https://github.com/wisaaco/AA_DistributedSystems_Lab/blob/main/U1-Sockets/D_server_game.py. The other scripts sac-client, sac-bench and sac.tmux have been vibe-coded taking as context sac-server, that way the architecture has been human-defined and the coding agents have been able to take it as an example. By doing so also the agents understand my _taste_ and try to produce similar code.
 
-- gemini-3.6-flash (web): Translate <assignment title> to english 
+- gemini-3.6-flash (web): Translate <assignment title> to English
 - MiMo-2.6-flash (opencode): Develop the client sac-client, sac-bench, sac.tmux
-- gemini-3.6-flash (web): Can you tellme which spell and grammar mistakes are on <content of REMDE.md>
+- gemini-3.6-flash (web): Can you tell me which spell and grammar mistakes are on <content of README.md>
