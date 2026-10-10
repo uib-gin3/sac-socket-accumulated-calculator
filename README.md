@@ -128,3 +128,4 @@ The code of sac-server has been developed by hand, old-school way, based on http
 - gemini-3.6-flash (web): Many lookups of information about python libraries
 - MiMo-2.6-flash (opencode): Develop the client sac-client, sac-bench, sac.tmux
 - MiMo-2.6-flash (opencode): Can you check spell and grammar of README.md. Suggest the minimal changes keeping the style.
+- MiMo-2.6-flash (opencode): Do the same fixing the comments of the python code of sac-server. Just the comments not the code.
