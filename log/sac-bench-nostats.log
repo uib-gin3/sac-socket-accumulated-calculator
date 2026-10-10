@@ -1,0 +1,41 @@
+sac-bench: 5 clients, 10.0 req/s each, (total 50.0 req/s), 30.0s against 127.0.0.1:1234
+[   1.0s] conns=5 served=49 (+49,    49.0 req/s) errors=0 tx=4654B rx=1074B resp_avg=15.20ms
+[   2.0s] conns=5 served=97 (+48,    48.0 req/s) errors=0 tx=9546B rx=2192B resp_avg=18.21ms
+[   3.0s] conns=5 served=150 (+53,    53.0 req/s) errors=0 tx=14404B rx=3275B resp_avg=14.98ms
+[   4.0s] conns=5 served=195 (+45,    45.0 req/s) errors=0 tx=19033B rx=4417B resp_avg=11.95ms
+[   5.0s] conns=5 served=237 (+42,    42.0 req/s) errors=0 tx=22869B rx=5215B resp_avg=12.73ms
+[   6.0s] conns=5 served=281 (+44,    44.0 req/s) errors=0 tx=27137B rx=6070B resp_avg=13.01ms
+[   7.0s] conns=5 served=319 (+38,    38.0 req/s) errors=0 tx=31459B rx=7018B resp_avg=12.83ms
+[   8.0s] conns=5 served=353 (+34,    34.0 req/s) errors=0 tx=34810B rx=7841B resp_avg=11.93ms
+[   9.0s] conns=5 served=400 (+47,    47.0 req/s) errors=0 tx=39173B rx=9062B resp_avg=11.22ms
+[  10.0s] conns=5 served=439 (+39,    39.0 req/s) errors=0 tx=43094B rx=9914B resp_avg=14.74ms
+[  11.0s] conns=5 served=483 (+44,    44.0 req/s) errors=0 tx=47698B rx=10912B resp_avg=14.19ms
+[  12.0s] conns=5 served=533 (+50,    50.0 req/s) errors=0 tx=52731B rx=12064B resp_avg=14.27ms
+[  13.0s] conns=5 served=574 (+41,    41.0 req/s) errors=0 tx=56587B rx=12830B resp_avg=17.54ms
+[  14.0s] conns=5 served=631 (+57,    57.0 req/s) errors=0 tx=62614B rx=14203B resp_avg=14.07ms
+[  15.0s] conns=5 served=671 (+40,    40.0 req/s) errors=0 tx=66597B rx=14968B resp_avg=12.23ms
+[  16.0s] conns=5 served=713 (+42,    42.0 req/s) errors=0 tx=71120B rx=15873B resp_avg=17.07ms
+[  17.0s] conns=5 served=750 (+37,    37.0 req/s) errors=0 tx=74625B rx=16589B resp_avg=13.15ms
+[  18.0s] conns=5 served=781 (+31,    31.0 req/s) errors=0 tx=77883B rx=17283B resp_avg=11.38ms
+[  19.0s] conns=5 served=832 (+51,    51.0 req/s) errors=0 tx=83367B rx=18286B resp_avg=9.64ms
+[  20.0s] conns=5 served=881 (+49,    49.0 req/s) errors=0 tx=87931B rx=19083B resp_avg=17.75ms
+[  21.0s] conns=5 served=918 (+37,    37.0 req/s) errors=0 tx=92048B rx=20083B resp_avg=13.35ms
+[  22.0s] conns=5 served=960 (+42,    42.0 req/s) errors=0 tx=95495B rx=21075B resp_avg=12.74ms
+[  23.0s] conns=5 served=1004 (+44,    44.0 req/s) errors=0 tx=100224B rx=22065B resp_avg=13.21ms
+[  24.0s] conns=5 served=1053 (+49,    49.0 req/s) errors=0 tx=104698B rx=23052B resp_avg=16.01ms
+[  25.0s] conns=5 served=1093 (+40,    40.0 req/s) errors=0 tx=108254B rx=24014B resp_avg=11.15ms
+[  26.0s] conns=5 served=1137 (+44,    44.0 req/s) errors=0 tx=112861B rx=24827B resp_avg=15.01ms
+[  27.0s] conns=5 served=1182 (+45,    45.0 req/s) errors=0 tx=117297B rx=25922B resp_avg=14.60ms
+[  28.0s] conns=5 served=1226 (+44,    44.0 req/s) errors=0 tx=122052B rx=26866B resp_avg=15.02ms
+[  29.0s] conns=5 served=1260 (+34,    34.0 req/s) errors=0 tx=124877B rx=27487B resp_avg=11.61ms
+
+=== summary ===
+duration        : 30.04s
+clients         : 5
+offered rate    : 50.0 req/s
+requests served : 1305
+throughput      : 43.4 req/s
+errors          : 0
+bytes sent      : 128757
+bytes received  : 28375
+response time   : min=0.15ms avg=13.92ms p50=0.70ms p95=44.21ms p99=47.06ms max=49.06ms
